@@ -1,0 +1,11 @@
+name: SinisterMobs
+version: '${project.version}'
+main: com.QulexTheBuilder.sinistermobs.Main
+api-version: 1.17
+authors: [ QulexTheBuilder ]
+description: Make Custom Mobs
+
+commands:
+  sinisterMobs:
+    usage: /sinistermobs
+    description: Test

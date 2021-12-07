@@ -1,0 +1,10 @@
+name: "Infested Zombie"
+type: Zombie
+maxhealth: 40
+damage: 12
+isBaby: true
+Equipment:
+  - CustomItem 1 #Helmet#
+  - CustomItem 2 #Chestplate#
+  - CustomItem 3 #Leggings#
+  - CustomItem 4 #Boots#
