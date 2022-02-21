@@ -39,8 +39,10 @@ public class Commands implements CommandExecutor, TabExecutor {
                     return true;
                 }
             } else if(args[0].equalsIgnoreCase("reload")) {
-                Main.getPlugin().mobs.UpdateItemList();
+                CustomItems.updateItemList();
                 return true;
+            } else if(args[0].equalsIgnoreCase("killTasks")) {
+                EntityList.taskIDs.clear();
             }
         }
         return false;
@@ -62,12 +64,12 @@ public class Commands implements CommandExecutor, TabExecutor {
                 tabList.add("reload");
                 return tabList;
             } else if( args.length == 2 && args[0].equalsIgnoreCase("spawnmob")) {
-                for(File file : InstantiateMobs.filesInDirectory("mobs")) {
+                for(File file : InstantiateMobs.getFilesInDirectory("mobs")) {
                     tabList.add(file.getName().substring(0, file.getName().length()-4));
                 }
                 return tabList;
             } else if( args.length == 2 && args[0].equalsIgnoreCase("spawnitem")) {
-                for(File file : InstantiateMobs.filesInDirectory("items")) {
+                for(File file : InstantiateMobs.getFilesInDirectory("items")) {
                     tabList.add(file.getName().toLowerCase().substring(0, file.getName().length()-4));
                 }
                 return tabList;

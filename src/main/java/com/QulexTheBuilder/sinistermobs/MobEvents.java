@@ -1,5 +1,7 @@
 package com.QulexTheBuilder.sinistermobs;
 
+import com.QulexTheBuilder.sinistermobs.abilities.AbilityList;
+import com.QulexTheBuilder.sinistermobs.conditions.ConditionList;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -12,11 +14,10 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
+
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 
 public class MobEvents implements Listener {
@@ -24,15 +25,13 @@ public class MobEvents implements Listener {
     private final Random random = new Random();
     private Map<UUID, List<Integer>> repeatMap = new HashMap<>();
     private Map<UUID, Map<Integer, Long>> coolDown = new HashMap<>();
-    private Abilities abilities = new Abilities();
-    private Conditions conditions = new Conditions();
 
     //Events you want to start the process from each event (When a mob gets hurt player gets hurt mob dies etc.)
 
     //Death event start
 
     @EventHandler
-    public void deathEvent(EntityDeathEvent event) {
+    public void onDeathEvent(EntityDeathEvent event) {
         Entity entity = event.getEntity();
         YamlConfiguration yml = getFileByName(entity);
         if(yml == null) {
@@ -42,7 +41,7 @@ public class MobEvents implements Listener {
     }
 
     @EventHandler
-    public void onMonsterHurt(EntityDamageByEntityEvent event) {
+    public void onMonsterHurt(EntityDamageEvent event) {
         if(event.getEntity() instanceof LivingEntity && (!(event.getEntity() instanceof Player))) {
             Entity entity = event.getEntity();
             YamlConfiguration yml = getFileByName(entity);
@@ -65,13 +64,54 @@ public class MobEvents implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerDeath(EntityDamageByEntityEvent event) {
+        if(event.getEntity() instanceof Player) {
+            if(((Player) event.getEntity()).getHealth() - event.getFinalDamage() <= 0) {
+                Entity entity = event.getDamager();
+                YamlConfiguration yml = getFileByName(entity);
+                if(yml == null) {
+                    return;
+                }
+                checkCondition(yml, entity, "onPlayerKill");
+            }
+        }
+    }
+
+    @EventHandler
+    public void onEntityDeath(EntityDamageByEntityEvent event) {
+        if(event.getEntity() instanceof LivingEntity) {
+            if(((LivingEntity) event.getEntity()).getHealth() - event.getFinalDamage() <= 0) {
+                Entity entity = event.getDamager();
+                YamlConfiguration yml = getFileByName(entity);
+                if(yml == null) {
+                    return;
+                }
+                checkCondition(yml, entity, "onKill");
+            }
+        }
+    }
+
+    @EventHandler
+    public void onArrowHit(EntityDamageByEntityEvent event) {
+        if(event.getDamager() instanceof Arrow) {
+            Entity entity = (Entity) ((Arrow) event.getDamager()).getShooter();
+            assert entity != null;
+            YamlConfiguration yml = getFileByName(entity);
+            if(yml == null) {
+                return;
+            }
+            checkCondition(yml, entity, "onHit");
+        }
+    }
+
     public void checkCondition(YamlConfiguration yml, Entity self, String label) {
         int iteration = 0;
         for(String str : yml.getStringList("abilities")) {
             Pair<String[], String[]> args = separateStrings(str, 5);
             if(args.first[2].equalsIgnoreCase(label)) {
-                Map<String, String> parameters = calcArguments(args.second[2]);
-                boolean succesfullAbility = false;
+                Map<String, String> parameters = calculateArguments(args.second[2]);
+                boolean successfulAbility = false;
                 boolean repeat = true;
                 long cooldown = 0;
                 if(parameters.containsKey("repeat")) {
@@ -80,15 +120,12 @@ public class MobEvents implements Listener {
                 if(parameters.containsKey("cooldown")) {
                     cooldown = Long.parseLong(parameters.get("cooldown"));
                 }
-
-
-
-                if(shouldRepeat(self, iteration) && offCooldown(self, iteration)) {
-                    succesfullAbility = doAbility(self, args);
+                if(isRepeatable(self, iteration) && isOffCooldown(self, iteration)) {
+                    if(checkIfDoAbility(self, args)) {
+                        successfulAbility = doAbility(self, args);
+                    }
                 }
-
-
-                if(succesfullAbility) {
+                if(successfulAbility) {
                     if(!repeat) {
                         if(repeatMap.containsKey(self.getUniqueId())) {
                             List<Integer> iterationList = repeatMap.get(self.getUniqueId());
@@ -106,8 +143,6 @@ public class MobEvents implements Listener {
                             abilitiesDone.put(iteration, System.currentTimeMillis()+cooldown);
                             coolDown.put(self.getUniqueId(), abilitiesDone);
                         } else {
-                            List<Integer> iterationList = new ArrayList<>();
-                            iterationList.add(iteration);
                             Map<Integer, Long> abilitiesDone = new HashMap<>();
                             abilitiesDone.put(iteration, System.currentTimeMillis()+cooldown);
                             coolDown.put(self.getUniqueId(), abilitiesDone);
@@ -119,23 +154,19 @@ public class MobEvents implements Listener {
         }
     }
 
-    private Boolean shouldRepeat(Entity self, Integer iteration) {
+    private Boolean isRepeatable(Entity self, Integer iteration) {
         if(repeatMap.containsKey(self.getUniqueId())) {
             List<Integer> abilitiesDone = repeatMap.get(self.getUniqueId());
-            if(abilitiesDone.contains(iteration)) {
-                return false;
-            }
+            return !abilitiesDone.contains(iteration);
         }
         return true;
     }
 
-    private Boolean offCooldown(Entity self, Integer iteration) {
+    private Boolean isOffCooldown(Entity self, Integer iteration) {
         if(coolDown.containsKey(self.getUniqueId())) {
             Map<Integer, Long> abilitiesDone = coolDown.get(self.getUniqueId());
             if(abilitiesDone.containsKey(iteration)) {
-                if(abilitiesDone.get(iteration) > System.currentTimeMillis()) {
-                    return false;
-                }
+                return abilitiesDone.get(iteration) <= System.currentTimeMillis();
             }
         }
         return true;
@@ -146,7 +177,7 @@ public class MobEvents implements Listener {
     private YamlConfiguration getFileByName(Entity entity) {
         if(entity.getPersistentDataContainer().has(new NamespacedKey(Main.getPlugin(), "customMonster"), PersistentDataType.STRING)) {
             String name = entity.getPersistentDataContainer().get(new NamespacedKey(Main.getPlugin(), "customMonster"), PersistentDataType.STRING);
-            for(File file : InstantiateMobs.filesInDirectory("mobs")) {
+            for(File file : Objects.requireNonNull(InstantiateMobs.getFilesInDirectory("mobs"))) {
                 if(file.getName().equalsIgnoreCase(name)) {
                     return YamlConfiguration.loadConfiguration(file);
                 }
@@ -155,7 +186,7 @@ public class MobEvents implements Listener {
         return null;
     }
 
-    public Map<String, String> calcArguments(String function) {
+    public Map<String, String> calculateArguments(String function) {
         Map<String, String> values = new HashMap<>();
         if(function == null) {
             return values;
@@ -170,7 +201,7 @@ public class MobEvents implements Listener {
         return values;
     }
 
-    private List<Entity> calcTargetFromString(Entity host, String function, String args) {
+    private List<Entity> calculateTargetFromString(Entity host, String function, Map<String, String> args) {
         List<Entity> entityList = new ArrayList<>();
         if(function.equalsIgnoreCase("target") && host instanceof Creature) {
             entityList.add(((Creature) host).getTarget());
@@ -184,13 +215,37 @@ public class MobEvents implements Listener {
                     }
                 }
             }
+        } else if(function.equalsIgnoreCase("selfRange")) {
+            int range = 5;
+            if(args.containsKey("range")) {
+                range = Integer.parseInt(args.get("range"));
+            }
+            List<Entity> tempEntity = host.getNearbyEntities(range, range, range);
+            for(Entity entity: tempEntity) {
+                if(entity instanceof LivingEntity) {
+                    entityList.add(entity);
+                }
+            }
+        } else if(function.equalsIgnoreCase("targetRange") && host instanceof Creature) {
+            int range = 5;
+            if(args.containsKey("range")) {
+                range = Integer.parseInt(args.get("range"));
+            }
+            if(((Creature) host).getTarget() != null) {
+                List<Entity> tempEntity = Objects.requireNonNull(((Creature) host).getTarget()).getNearbyEntities(range, range, range);
+                for(Entity entity: tempEntity) {
+                    if(entity instanceof LivingEntity) {
+                        entityList.add(entity);
+                    }
+                }
+            }
         } else {
             entityList.add(host);
         }
         return entityList;
     }
 
-    private Boolean calcHealthCheck(Entity host, String string, String args) {
+    private Boolean calculateHealthCheck(Entity host, String string, String args) {
         if(string == null) {
             return true;
         }
@@ -221,157 +276,142 @@ public class MobEvents implements Listener {
         }
         return true;
     }
-    private Integer calcChance(String string, String args) {
+    private Integer calculateChance(String string, String args) {
         if(string == null) {
             return 100;
         }
         return Integer.parseInt(string.trim().replace("%", ""));
     }
+    public boolean checkIfDoAbility(Entity entity, Pair<String[], String[]> args ) {
+        if(!entity.isValid()) {
+            
+        }
+        if(!calculateHealthCheck(entity, args.first[3], args.second[3])) {
+            return false;
+        }
+        return random.nextInt(100) < calculateChance(args.first[4], args.second[4]);
+    }
 
     public Boolean doAbility(Entity entity, Pair<String[], String[]> args) {
         if(args.first[0].equalsIgnoreCase("metaAbility")) {
-            return metaAbility(calcArguments(args.second[0]), calcTargetFromString(entity, args.first[1],
-                            args.second[1]), calcHealthCheck(entity, args.first[3], args.second[3]),
-                    calcChance(args.first[4], args.second[4]), args, entity);
+            return metaAbility(calculateArguments(args.second[0]), calculateTargetFromString(entity, args.first[1],
+                            calculateArguments(args.second[1])), args, entity);
         } else if(args.first[0].equalsIgnoreCase("weightedAbility")) {
-            return weightedAbility(calcArguments(args.second[0]), calcTargetFromString(entity, args.first[1],
-                            args.second[1]), calcHealthCheck(entity, args.first[3], args.second[3]),
-                    calcChance(args.first[4], args.second[4]), args, entity);
+            return weightedAbility(calculateArguments(args.second[0]), calculateTargetFromString(entity, args.first[1],
+                            calculateArguments(args.second[1])), args, entity);
         } else {
             try {
-                Class[] classes = {Map.class, List.class, Boolean.class, Integer.class, Entity.class};
-                Method m = Abilities.class.getMethod(args.first[0] + "Ability", classes);
-                m.setAccessible(true);
-                Object invoke = m.invoke(abilities, calcArguments(args.second[0]), calcTargetFromString(entity, args.first[1], args.second[1]), calcHealthCheck(entity, args.first[3], args.second[3]), calcChance(args.first[4], args.second[4]), entity);
-                return (Boolean) invoke;
-            } catch(NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
-                System.out.println("There is no ability with this name");
-                return false;
+                return AbilityList.valueOf(args.first[0].toUpperCase()).doAbility(entity, calculateTargetFromString(entity, args.first[1], calculateArguments(args.second[1])), calculateArguments(args.second[0]));
+            } catch(IllegalArgumentException e) {
+                System.out.println("There is no Ability with that name");
             }
+            return false;
         }
     }
 
-    private Boolean metaAbility(Map<String, String> arg, List<Entity> targets, boolean healthCheck, Integer chance, Pair<String[], String[]> args, Entity self) {
-        if(!healthCheck) {
-            return false;
-        }
-        if(random.nextInt(100) >= chance) {
-            return false;
-        }
+    private Boolean metaAbility(Map<String, String> arg, List<Entity> targets, Pair<String[], String[]> args, Entity self) {
         String ability = null;
         if(arg.containsKey("ability")) {
             ability = arg.get("ability");
         }
+        YamlConfiguration yml = getFileByName(self);
         for(Entity target : targets) {
             if(target == null) {
                 return false;
             }
-            if(!(target instanceof LivingEntity)) {
-                return false;
-            }
-            YamlConfiguration yml = getFileByName(self);
+            assert yml != null;
             if(!checkAbilityConditions(yml, ability, target)) {
                 return false;
             }
-
-            List<String> abilityList = yml.getStringList(ability+".abilities");
-            if(abilityList == null) {
-                System.out.println("Could not find list");
-            }
-            boolean oneSuccessfullyAbility = false;
-            for(String currentAbility : abilityList) {
-                currentAbility = currentAbility.trim();
-                args.second[0] = currentAbility.substring(currentAbility.indexOf("(") + 1, currentAbility.indexOf(")"));
-                currentAbility = currentAbility.replaceAll("\\("+args.second[0]+"\\)", "");
-                args.first[0] = currentAbility;
-                boolean checkAbility = doAbility(self, args);
-                if(checkAbility) {
-                    oneSuccessfullyAbility = true;
-                } else {
-                    System.out.println("[Error] Ability was returned false" + args.first[0]+" "+args.second[0]);
-                }
-            }
-            if(!oneSuccessfullyAbility) {
-                return false;
+        }
+        assert yml != null;
+        List<String> abilityList = yml.getStringList(ability+".abilities");
+        if(abilityList.isEmpty()) {
+            System.out.println("Could not find list");
+        }
+        boolean oneSuccessfullyAbility = false;
+        String args1 = args.first[0];
+        String args2 = args.second[0];
+        for(String currentAbility : abilityList) {
+            currentAbility = currentAbility.trim();
+            args.second[0] = currentAbility.substring(currentAbility.indexOf("(") + 1, currentAbility.indexOf(")"));
+            currentAbility = currentAbility.replaceAll("\\("+args.second[0]+"\\)", "");
+            args.first[0] = currentAbility;
+            boolean checkAbility = doAbility(self, args);
+            if(checkAbility) {
+                oneSuccessfullyAbility = true;
+            } else {
+                System.out.println("[Error] Ability was returned false: " + args.first[0]+" "+args.second[0]);
             }
         }
-        return true;
+        args.first[0] = args1;
+        args.second[0] = args2;
+        return oneSuccessfullyAbility;
     }
 
-    private Boolean weightedAbility(Map<String, String> arg, List<Entity> targets, boolean healthCheck, Integer chance, Pair<String[], String[]> args, Entity self) {
-        if(!healthCheck) {
-            return false;
-        }
-        if(random.nextInt(100) >= chance) {
-            return false;
-        }
+    private Boolean weightedAbility(Map<String, String> arg, List<Entity> targets, Pair<String[], String[]> args, Entity self) {
         String ability = null;
         if(arg.containsKey("ability")) {
             ability = arg.get("ability");
         }
+        YamlConfiguration yml = getFileByName(self);
         for(Entity target : targets) {
             if(target == null) {
                 return false;
             }
-            if(!(target instanceof LivingEntity)) {
-                return false;
-            }
-            YamlConfiguration yml = getFileByName(self);
+            assert yml != null;
             if(!checkAbilityConditions(yml, ability, target)) {
                 return false;
             }
-            System.out.println("Passed conditions");
-            List<String> abilityList = yml.getStringList(ability+".abilities");
-            if(abilityList == null) {
-                System.out.println("Could not find list");
-            }
-            int weightSum = 0;
-            for(String currentAbility : abilityList) {
-                Pair<String[], String[]> weightedAbility = separateStrings(currentAbility, 2);
-                weightSum += Integer.parseInt(weightedAbility.first[1].trim());
-            }
-            System.out.println(weightSum);
-            int rng = random.nextInt(weightSum);
-            System.out.println(rng);
-            int counter = 0;
-            for(String currentAbility : abilityList) {
-                Pair<String[], String[]> weightedAbility = separateStrings(currentAbility, 2);
-                System.out.println(counter);
-                if(Integer.parseInt(weightedAbility.first[1].trim()) + counter > rng) {
-                    args.first[0] = weightedAbility.first[0];
-                    args.second[0] = weightedAbility.second[0];
-                    System.out.println(Arrays.toString(args.first));
-                    System.out.println(Arrays.toString(args.second));
-                    return doAbility(self, args);
-                }
-                counter += Integer.parseInt(weightedAbility.first[1].trim());
-            }
         }
-        return true;
+        assert yml != null;
+        List<String> abilityList = yml.getStringList(ability+".abilities");
+        if(abilityList.isEmpty()) {
+            System.out.println("Could not find list");
+        }
+        int weightSum = 0;
+        for(String currentAbility : abilityList) {
+            Pair<String[], String[]> weightedAbility = separateStrings(currentAbility, 2);
+            weightSum += Integer.parseInt(weightedAbility.first[1].trim());
+        }
+        int rng = random.nextInt(weightSum);
+        int counter = 0;
+        String args1 = args.first[0];
+        String args2 = args.second[0];
+        for(String currentAbility : abilityList) {
+            Pair<String[], String[]> weightedAbility = separateStrings(currentAbility, 2);
+            if(Integer.parseInt(weightedAbility.first[1].trim()) + counter > rng) {
+                args.first[0] = weightedAbility.first[0];
+                args.second[0] = weightedAbility.second[0];
+                boolean success = doAbility(self, args);
+                args.first[0] = args1;
+                args.second[0] = args2;
+                return success;
+            }
+            counter += Integer.parseInt(weightedAbility.first[1].trim());
+        }
+        return false;
     }
 
 
 
     private Boolean checkAbilityConditions(YamlConfiguration yml, String ability, Entity target) {
         List<String> arguments = yml.getStringList(ability+".conditions");
-        if(arguments == null) {
+        if(arguments.isEmpty()) {
             System.out.println("Could not find arguments for metaAbility");
         }
         for(String condition : arguments) {
             condition = condition.trim();
             String parameters = condition.substring(condition.indexOf("(") + 1, condition.indexOf(")"));
             condition = condition.replaceAll("\\("+parameters+"\\)", "").trim();
-            Map<String, String> parameterMap = calcArguments(parameters);
-            boolean succesFullcheck = false;
+            Map<String, String> parameterMap = calculateArguments(parameters);
+            boolean succesFullcheck;
             try {
-                Method m = Conditions.class.getMethod(condition+"Condition", Map.class, Entity.class);
-                m.setAccessible(true);
-                Object invoke = m.invoke(conditions, parameterMap, target);
-                succesFullcheck = (Boolean) invoke;
-            } catch(NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                succesFullcheck = ConditionList.valueOf(condition.toUpperCase()).checkCondition(target, parameterMap);
+            } catch(IllegalArgumentException e) {
                 System.out.println("There is no condition with this name");
-                return false;
+                System.out.println(condition);
+                succesFullcheck = false;
             }
             if(!succesFullcheck) {
                 return false;
@@ -393,12 +433,12 @@ public class MobEvents implements Listener {
             try {
                 args[count] = arg;
             } catch(ArrayIndexOutOfBoundsException e) {
-                System.out.println(ChatColor.RED+"You have to many commas in the config file, there should max be 4 commas");
+                System.out.println(ChatColor.RED+"You have to many commas in the config file, there should max be"+(size-1)+"commas");
             }
         }
         String[] commands = mainString.split(",");
         if(commands.length > size) {
-            System.out.println(ChatColor.RED+"You have defined to many parameters in the config file this plugin only supports 5 mayor parameter use sub parameters instead");
+            System.out.println(ChatColor.RED+"You have defined to many parameters in the config file this plugin only supports"+size+"mayor parameter use sub parameters instead");
         }
         int count = 0;
         for(String expression : commands) {
@@ -459,19 +499,28 @@ public class MobEvents implements Listener {
         }
     }
 
+    public static Location getAbilityLocation(Entity entity) {
+        Location location = entity.getLocation();
+        if(entity.getPersistentDataContainer().has(new NamespacedKey(Main.getPlugin(), "abilityPosition"), PersistentDataType.INTEGER_ARRAY)) {
+            int[] abilityPositions = entity.getPersistentDataContainer().get(new NamespacedKey(Main.getPlugin(), "abilityPosition"), PersistentDataType.INTEGER_ARRAY);
+            location = new Vector(abilityPositions[0], abilityPositions[1], abilityPositions[2]).toLocation(entity.getWorld());
+        }
+        return location;
+    }
+
     @EventHandler
     private void onPlayerMoveEvent(PlayerMoveEvent event) {
         List<UUID> mobId = new ArrayList<>();
         for(Entity entity : event.getPlayer().getNearbyEntities(30,30,30)) {
             mobId.add(entity.getUniqueId());
-            if(Main.getPlugin().mobs.bossMobs.containsKey(entity.getUniqueId())) {
-                BossBar bb = Main.getPlugin().mobs.bossMobs.get(entity.getUniqueId());
+            if(EntityList.bossMobs.containsKey(entity.getUniqueId())) {
+                BossBar bb = EntityList.bossMobs.get(entity.getUniqueId());
                 bb.addPlayer(event.getPlayer());
             }
         }
-        for(UUID id : Main.getPlugin().mobs.bossMobs.keySet()) {
+        for(UUID id : EntityList.bossMobs.keySet()) {
             if(!(mobId.contains(id))) {
-                BossBar bb = Main.getPlugin().mobs.bossMobs.get(id);
+                BossBar bb = EntityList.bossMobs.get(id);
                 bb.removePlayer(event.getPlayer());
             }
         }
@@ -479,15 +528,15 @@ public class MobEvents implements Listener {
 
     @EventHandler
     private void onEntityDeath(EntityDeathEvent event) {
-        if(Main.getPlugin().mobs.taskIDs.containsKey(event.getEntity().getUniqueId())) {
-            List<BukkitTask> tasks = Main.getPlugin().mobs.taskIDs.get(event.getEntity().getUniqueId());
+        if(EntityList.taskIDs.containsKey(event.getEntity().getUniqueId())) {
+            List<BukkitTask> tasks = EntityList.taskIDs.get(event.getEntity().getUniqueId());
             for(BukkitTask task : tasks) {
                 task.cancel();
             }
         }
-        if(Main.getPlugin().mobs.bossMobs.containsKey(event.getEntity().getUniqueId())) {
-            BossBar bb = Main.getPlugin().mobs.bossMobs.get(event.getEntity().getUniqueId());
-            Main.getPlugin().mobs.bossMobs.remove(event.getEntity().getUniqueId());
+        if(EntityList.bossMobs.containsKey(event.getEntity().getUniqueId())) {
+            BossBar bb = EntityList.bossMobs.get(event.getEntity().getUniqueId());
+            EntityList.bossMobs.remove(event.getEntity().getUniqueId());
             bb.removeAll();
         }
         repeatMap.remove(event.getEntity().getUniqueId());
@@ -499,8 +548,8 @@ public class MobEvents implements Listener {
             return;
         }
         LivingEntity entity = (LivingEntity) event.getEntity();
-        if(Main.getPlugin().mobs.bossMobs.containsKey(entity.getUniqueId())) {
-            BossBar bb = Main.getPlugin().mobs.bossMobs.get(entity.getUniqueId());
+        if(EntityList.bossMobs.containsKey(entity.getUniqueId())) {
+            BossBar bb = EntityList.bossMobs.get(entity.getUniqueId());
             AttributeInstance healthInstance = entity.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             double healthMax = healthInstance.getBaseValue();
             double health = entity.getHealth();
@@ -509,13 +558,25 @@ public class MobEvents implements Listener {
     }
 
     @EventHandler
-    private void EntityTakesFallDamage(EntityDamageEvent event) {
+    private void onFallDamage(EntityDamageEvent event) {
         if(event.getCause().equals(EntityDamageEvent.DamageCause.FALL)) {
             if(event.getEntity().getPersistentDataContainer().has(new NamespacedKey(Main.getPlugin(), "nofall"), PersistentDataType.STRING)) {
                 if(event.getEntity().getPersistentDataContainer().get(new NamespacedKey(Main.getPlugin(), "nofall"), PersistentDataType.STRING).trim().equalsIgnoreCase("true")) {
                     event.setCancelled(true);
                 }
             }
+        }
+    }
+
+    @EventHandler
+    private void onShootProjectile(EntityShootBowEvent event) {
+        if(event.getEntity().getPersistentDataContainer().has(new NamespacedKey(Main.getPlugin(), "arrowColor"), PersistentDataType.STRING)) {
+            String arrowColor = event.getEntity().getPersistentDataContainer().get(new NamespacedKey(Main.getPlugin(), "arrowColor"), PersistentDataType.STRING);
+            Entity arrow = event.getProjectile();
+            if(arrow instanceof Arrow) {
+                ((Arrow) arrow).setColor(Color.fromRGB(Integer.parseInt(arrowColor, 16)));
+            }
+            event.setProjectile(arrow);
         }
     }
 }

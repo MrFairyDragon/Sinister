@@ -25,7 +25,7 @@ public class MobSpawningAlgorithm implements Listener {
         double distance = getDistanceBetweenBlocks(centerLocation.getBlock(), location.getBlock());
         int weightSum = 0;
         Map<String, Integer> mobs = new HashMap<>();
-        for(File file : Objects.requireNonNull(InstantiateMobs.filesInDirectory("mobs"))) {
+        for(File file : Objects.requireNonNull(InstantiateMobs.getFilesInDirectory("mobs"))) {
             YamlConfiguration yml = YamlConfiguration.loadConfiguration(file);
             List<Integer> data = yml.getIntegerList("spawnRequirement");
             if(data.size() != 3) {

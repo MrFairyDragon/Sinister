@@ -11,7 +11,6 @@ public final class Main extends JavaPlugin {
     public static Main getPlugin() {
         return plugin;
     }
-
     public InstantiateMobs mobs;
 
     @Override
@@ -19,7 +18,7 @@ public final class Main extends JavaPlugin {
         plugin = this;
         this.saveDefaultConfig();
         mobs = new InstantiateMobs();
-        mobs.innit();
+        CustomItems.updateItemList();
         Objects.requireNonNull(this.getCommand("sinisterMobs")).setExecutor(new Commands());
         getServer().getPluginManager().registerEvents(new MobEvents(), this);
         getServer().getPluginManager().registerEvents(new MobSpawningAlgorithm(), this);

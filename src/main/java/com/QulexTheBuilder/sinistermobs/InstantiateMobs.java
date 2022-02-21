@@ -22,10 +22,8 @@ import java.util.*;
 
 public class InstantiateMobs {
 
-    public Map<String, ItemStack> customItems = new HashMap<>();
-    public Map<UUID, BossBar> bossMobs = new HashMap<>(); //Data needs to be saved on server shutdown #Notyetimplemented
-    public Map<UUID, List<BukkitTask>> taskIDs = new HashMap<>(); //Data needs to be saved on server shutdown #Notyetimplemented
     private MobEvents mobevent = new MobEvents();
+    public Map<String, ItemStack> customItems = new HashMap<>();
 
     InstantiateMobs() {
         createDirectory("mobs");
@@ -38,7 +36,7 @@ public class InstantiateMobs {
         System.out.println("Folder was created is " + mkdir);
     }
 
-    public static File[] filesInDirectory(String name) {
+    public static File[] getFilesInDirectory(String name) {
         File file = new File(Main.getPlugin().getDataFolder().getAbsolutePath()+File.separator+name);
         if(file.isDirectory()) {
             return file.listFiles();
@@ -47,40 +45,8 @@ public class InstantiateMobs {
         return null;
     }
 
-    public void innit() {
-        UpdateItemList();
-    }
-
-    public void UpdateItemList() {
-        customItems.clear();
-        for(File file : Objects.requireNonNull(InstantiateMobs.filesInDirectory("items"))) {
-            YamlConfiguration yml = YamlConfiguration.loadConfiguration(file);
-            customItems.put(file.getName().toLowerCase().substring(0, file.getName().length()-4), CreateItem(yml));
-        }
-    }
-
-    public ItemStack CreateItem(YamlConfiguration yml) {
-        ItemStack item = new ItemStack(Material.valueOf(Objects.requireNonNull(yml.getString("Type")).toUpperCase()), 1);
-        ItemMeta meta = item.getItemMeta();
-        Objects.requireNonNull(meta).setUnbreakable(yml.getBoolean("Unbreakable"));
-        meta.setDisplayName(yml.getString("Name"));
-        meta.setCustomModelData(yml.getInt("Model"));
-        meta.setLore(yml.getStringList("Lore"));
-        for(String str : yml.getStringList("Enchantments")) {
-            String[] strings = str.split(",");
-            NamespacedKey key = NamespacedKey.minecraft(strings[0].trim().toLowerCase());
-            meta.addEnchant(Objects.requireNonNull(Enchantment.getByKey(key)), Integer.parseInt(strings[1].trim()), true);
-        }
-        if(meta instanceof LeatherArmorMeta) {
-            List<Integer> rgb = yml.getIntegerList("Color");
-            ((LeatherArmorMeta) meta).setColor(Color.fromRGB(rgb.get(0), rgb.get(1), rgb.get(2)));
-        }
-        item.setItemMeta(meta);
-        return item;
-    }
-
     public Entity spawnMob(String name, Location location) {
-        for(File file : Objects.requireNonNull(InstantiateMobs.filesInDirectory("mobs"))) {
+        for(File file : Objects.requireNonNull(InstantiateMobs.getFilesInDirectory("mobs"))) {
             if(file.getName().equalsIgnoreCase(name+".yml")) {
                 YamlConfiguration yml = YamlConfiguration.loadConfiguration(file);
                 org.bukkit.entity.Entity entity = Objects.requireNonNull(location.getWorld()).spawnEntity(location, EntityType.valueOf(Objects.requireNonNull(yml.getString("type")).toUpperCase()));
@@ -92,7 +58,7 @@ public class InstantiateMobs {
     }
 
     public void changeMob(String name, Entity entity) {
-        for(File file : Objects.requireNonNull(InstantiateMobs.filesInDirectory("mobs"))) {
+        for(File file : Objects.requireNonNull(InstantiateMobs.getFilesInDirectory("mobs"))) {
             if(file.getName().equalsIgnoreCase(name+".yml")) {
                 YamlConfiguration yml = YamlConfiguration.loadConfiguration(file);
                 changeEntity(entity, file, yml);
@@ -108,7 +74,7 @@ public class InstantiateMobs {
             if(yml.isString("bossbar.title") && yml.isString("bossbar.color") && yml.isString("bossbar.style")) {
                 BossBar bossbar = Bukkit.createBossBar(yml.getString("bossbar.title"), BarColor.valueOf(yml.getString("bossbar.color").toUpperCase()), BarStyle.valueOf(yml.getString("bossbar.style").toUpperCase()));
                 bossbar.setVisible(true);
-                bossMobs.put(entity.getUniqueId(), bossbar);
+                EntityList.bossMobs.put(entity.getUniqueId(), bossbar);
             }
             for(String str : yml.getStringList("equipment")) {
                 String[] strings = str.split(",");
@@ -132,6 +98,12 @@ public class InstantiateMobs {
                 } else {
                     ageableEntity.setAdult();
                 }
+            }
+            boolean canPickUpItems = yml.getBoolean("canPickup");
+            if(!canPickUpItems) {
+                ((LivingEntity) entity).setCanPickupItems(false);
+            } else {
+                ((LivingEntity) entity).setCanPickupItems(true);
             }
             AttributeInstance health = livingEntity.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             AttributeInstance damage = livingEntity.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
@@ -160,11 +132,11 @@ public class InstantiateMobs {
         for(String str : yml.getStringList("abilities")) {
             Pair<String[], String[]> args = mobevent.separateStrings(str, 5);
             if(args.first[2].equalsIgnoreCase("onTrigger")) {
-                Map<String, String> parameters = mobevent.calcArguments(args.second[2]);
-                Long counter = 100L;
+                Map<String, String> parameters = mobevent.calculateArguments(args.second[2]);
+                Long ticks = 100L;
                 Long delay = 0L;
                 if(parameters.containsKey("ticks")) {
-                    counter = Long.parseLong(parameters.get("ticks"));
+                    ticks = Long.parseLong(parameters.get("ticks"));
                 }
                 if(parameters.containsKey("delay")) {
                     delay = Long.parseLong(parameters.get("delay"));
@@ -172,12 +144,14 @@ public class InstantiateMobs {
                 BukkitTask task = new BukkitRunnable() {
                     @Override
                     public void run() {
-                        mobevent.doAbility(entity, args);
+                        if(mobevent.checkIfDoAbility(entity, args)) {
+                            mobevent.doAbility(entity, args);
+                        }
                     }
-                }.runTaskTimer(Main.getPlugin(), delay, counter);
+                }.runTaskTimer(Main.getPlugin(), delay, ticks);
                 taskList.add(task);
             }
         }
-        taskIDs.put(entity.getUniqueId(), taskList);
+        EntityList.taskIDs.put(entity.getUniqueId(), taskList);
     }
 }
