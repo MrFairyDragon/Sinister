@@ -284,7 +284,7 @@ public class MobEvents implements Listener {
     }
     public boolean checkIfDoAbility(Entity entity, Pair<String[], String[]> args ) {
         if(!entity.isValid()) {
-            
+            return false;
         }
         if(!calculateHealthCheck(entity, args.first[3], args.second[3])) {
             return false;
