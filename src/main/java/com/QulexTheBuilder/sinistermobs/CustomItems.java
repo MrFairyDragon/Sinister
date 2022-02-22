@@ -14,7 +14,6 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 

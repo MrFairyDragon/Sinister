@@ -19,30 +19,42 @@ public class Commands implements CommandExecutor, TabExecutor {
         }
         Player player = (Player) sender;
         if(command.getName().equalsIgnoreCase("sinisterMobs")) {
-            if(args == null) {
-                sender.sendMessage(command.getUsage());
-                return true;
-            } else if(args[0].equalsIgnoreCase("spawnMob")) {
-                if(args.length == 1) {
-                    sender.sendMessage("You need to specify a mob");
+            switch(args[0]) {
+                case "spawnMob":
+                    if(!player.hasPermission("spawnMob") || !player.isOp()){
+                        return true;
+                    }
+                    if(args.length == 1) {
+                        sender.sendMessage("You need to specify a mob");
+                        return true;
+                    } else if(args.length == 2) {
+                        Main.getPlugin().mobs.spawnMob(args[1], player.getLocation());
+                        return true;
+                    }
+                case "spawnItem":
+                    if(!player.hasPermission("spawnItem") || !player.isOp()){
+                        return true;
+                    }
+                    if(args.length == 1) {
+                        sender.sendMessage("You need to specify a Item");
+                        return true;
+                    } else if(args.length == 2) {
+                        spawnItem(args[1], player);
+                        return true;
+                    }
+                case "reload":
+                    if(!player.hasPermission("reload") || !player.isOp()){
+                        return true;
+                    }
+                    CustomItems.updateItemList();
                     return true;
-                } else if(args.length == 2) {
-                    Main.getPlugin().mobs.spawnMob(args[1], player.getLocation());
+                case "killTasks":
+                    if(!player.hasPermission("killTasks") || !player.isOp()){
+                        return true;
+                    }
+                    EntityList.taskIDs.clear();
+                default:
                     return true;
-                }
-            } else if(args[0].equalsIgnoreCase("spawnItem")) {
-                if(args.length == 1) {
-                    sender.sendMessage("You need to specify a Item");
-                    return true;
-                } else if(args.length == 2) {
-                    spawnItem(args[1], player);
-                    return true;
-                }
-            } else if(args[0].equalsIgnoreCase("reload")) {
-                CustomItems.updateItemList();
-                return true;
-            } else if(args[0].equalsIgnoreCase("killTasks")) {
-                EntityList.taskIDs.clear();
             }
         }
         return false;

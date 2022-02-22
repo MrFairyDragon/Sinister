@@ -250,29 +250,38 @@ public class MobEvents implements Listener {
             return true;
         }
         if(host instanceof Creature) {
-            double health = ((Creature) host).getHealth();
+            String[] operators = {"<=",">=","<",">","=="};
+             double health = ((Creature) host).getHealth();
             AttributeInstance maxHealthInstance = ((Creature) host).getAttribute(Attribute.GENERIC_MAX_HEALTH);
             double maxHealth = Objects.requireNonNull(maxHealthInstance).getBaseValue();
             double remainingHealth = health/maxHealth*100;
             string = string.trim().replace("%", "");
-           if(string.contains("<=")) {
-               string = string.replaceAll("<=", "");
-               return remainingHealth <= Integer.parseInt(string);
-           } else if(string.contains(">=")) {
-               string = string.replaceAll(">=", "");
-               return remainingHealth >= Integer.parseInt(string);
-           } else if(string.contains(">")) {
-               string = string.replaceAll(">", "");
-               return remainingHealth > Integer.parseInt(string);
-           } else if(string.contains("<")) {
-               string = string.replaceAll("<", "");
-               return remainingHealth < Integer.parseInt(string);
-           } else if(string.contains("==")) {
-               string = string.replaceAll("==", "");
-               return remainingHealth == Integer.parseInt(string);
-           } else {
-               return true;
-           }
+            String match = "default";
+            for (int i = 0; i < operators.length; i++) {
+                if (string.contains(operators[i])) {
+                    match = operators[i];
+                    break;
+                }
+            }
+            switch(match) {
+                case "<=":
+                    string = string.replaceAll("<=", "");
+                    return remainingHealth <= Integer.parseInt(string);
+                case ">=":
+                    string = string.replaceAll(">=", "");
+                    return remainingHealth >= Integer.parseInt(string);
+                case ">":
+                    string = string.replaceAll(">", "");
+                    return remainingHealth > Integer.parseInt(string);
+                case "<":
+                    string = string.replaceAll("<", "");
+                    return remainingHealth < Integer.parseInt(string);
+                case "==":
+                    string = string.replaceAll("==", "");
+                    return remainingHealth == Integer.parseInt(string);
+                default:
+                    return true;
+            }
         }
         return true;
     }
