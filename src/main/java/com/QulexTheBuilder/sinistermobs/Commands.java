@@ -47,6 +47,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                         return true;
                     }
                     CustomItems.updateItemList();
+                    player.sendMessage("You have reloaded stuff");
                     return true;
                 case "killTasks":
                     if(!player.hasPermission("killTasks") || !player.isOp()){
