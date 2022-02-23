@@ -27,9 +27,6 @@ public class MobEvents implements Listener {
     private Map<UUID, Map<Integer, Long>> coolDown = new HashMap<>();
 
     //Events you want to start the process from each event (When a mob gets hurt player gets hurt mob dies etc.)
-
-    //Death event start
-
     @EventHandler
     public void onDeathEvent(EntityDeathEvent event) {
         Entity entity = event.getEntity();
@@ -105,6 +102,7 @@ public class MobEvents implements Listener {
         }
     }
 
+    //Checks if a ability is off cooldown and should repeat (This could be changed from global variable to entity dependant variables using MySQL?)
     public void checkCondition(YamlConfiguration yml, Entity self, String label) {
         int iteration = 0;
         for(String str : yml.getStringList("abilities")) {
@@ -154,6 +152,7 @@ public class MobEvents implements Listener {
         }
     }
 
+    //Checks the maps for entities who are repeatable
     private Boolean isRepeatable(Entity self, Integer iteration) {
         if(repeatMap.containsKey(self.getUniqueId())) {
             List<Integer> abilitiesDone = repeatMap.get(self.getUniqueId());
@@ -162,6 +161,7 @@ public class MobEvents implements Listener {
         return true;
     }
 
+    //Checks the maps for entities who are cooldown dependent
     private Boolean isOffCooldown(Entity self, Integer iteration) {
         if(coolDown.containsKey(self.getUniqueId())) {
             Map<Integer, Long> abilitiesDone = coolDown.get(self.getUniqueId());
@@ -173,7 +173,6 @@ public class MobEvents implements Listener {
     }
 
     //The backbone of the system these methods convert that string from the yml file into useful data.
-
     private YamlConfiguration getFileByName(Entity entity) {
         if(entity.getPersistentDataContainer().has(new NamespacedKey(Main.getPlugin(), "customMonster"), PersistentDataType.STRING)) {
             String name = entity.getPersistentDataContainer().get(new NamespacedKey(Main.getPlugin(), "customMonster"), PersistentDataType.STRING);
@@ -186,6 +185,7 @@ public class MobEvents implements Listener {
         return null;
     }
 
+    //turns string between parentheses into usable
     public Map<String, String> calculateArguments(String function) {
         Map<String, String> values = new HashMap<>();
         if(function == null) {
@@ -201,50 +201,63 @@ public class MobEvents implements Listener {
         return values;
     }
 
+    //Calculates the target based on a string
     private List<Entity> calculateTargetFromString(Entity host, String function, Map<String, String> args) {
         List<Entity> entityList = new ArrayList<>();
-        if(function.equalsIgnoreCase("target") && host instanceof Creature) {
-            entityList.add(((Creature) host).getTarget());
-        } else if(function.equalsIgnoreCase("passenger")) {
-            entityList.addAll(host.getPassengers());
-        } else if(function.equalsIgnoreCase("passengerTarget")) {
-            for(Entity entity : host.getPassengers()) {
-                if(entity instanceof Creature) {
-                    if(((Creature) entity).getTarget() != null) {
-                        entityList.add(((Creature) entity).getTarget());
+        switch(function) {
+            case "target":
+                if(host instanceof Creature) {
+                    entityList.add(((Creature) host).getTarget());
+                    break;
+                }
+            case "passenger":
+                entityList.addAll(host.getPassengers());
+                break;
+            case "passengerTarget":
+                for(Entity entity : host.getPassengers()) {
+                    if(entity instanceof Creature) {
+                        if(((Creature) entity).getTarget() != null) {
+                            entityList.add(((Creature) entity).getTarget());
+                        }
                     }
                 }
-            }
-        } else if(function.equalsIgnoreCase("selfRange")) {
-            int range = 5;
-            if(args.containsKey("range")) {
-                range = Integer.parseInt(args.get("range"));
-            }
-            List<Entity> tempEntity = host.getNearbyEntities(range, range, range);
-            for(Entity entity: tempEntity) {
-                if(entity instanceof LivingEntity) {
-                    entityList.add(entity);
+                break;
+            case "selfRange":
+                int range = 5;
+                if(args.containsKey("range")) {
+                    range = Integer.parseInt(args.get("range"));
                 }
-            }
-        } else if(function.equalsIgnoreCase("targetRange") && host instanceof Creature) {
-            int range = 5;
-            if(args.containsKey("range")) {
-                range = Integer.parseInt(args.get("range"));
-            }
-            if(((Creature) host).getTarget() != null) {
-                List<Entity> tempEntity = Objects.requireNonNull(((Creature) host).getTarget()).getNearbyEntities(range, range, range);
-                for(Entity entity: tempEntity) {
+                //Get nearby entities is a very expansive method
+                List<Entity> tempEntity = host.getNearbyEntities(range, range, range);
+                for(Entity entity : tempEntity) {
                     if(entity instanceof LivingEntity) {
                         entityList.add(entity);
                     }
                 }
-            }
-        } else {
-            entityList.add(host);
+                break;
+            case "targetRange":
+                int range2 = 5;
+                if(args.containsKey("range")) {
+                    range2 = Integer.parseInt(args.get("range"));
+                }
+                if(((Creature) host).getTarget() != null) {
+                    //Get nearby entities is a very expansive method
+                    List<Entity> tempEntity2 = Objects.requireNonNull(((Creature) host).getTarget()).getNearbyEntities(range2, range2, range2);
+                    for(Entity entity : tempEntity2) {
+                        if(entity instanceof LivingEntity) {
+                            entityList.add(entity);
+                        }
+                    }
+                }
+                break;
+            default:
+                entityList.add(host);
         }
         return entityList;
     }
 
+
+    //checks if the mob satisfies the health condition
     private Boolean calculateHealthCheck(Entity host, String string, String args) {
         if(string == null) {
             return true;
@@ -285,15 +298,21 @@ public class MobEvents implements Listener {
         }
         return true;
     }
+
+    //checks if the mob satisfies the chance condition
     private Integer calculateChance(String string, String args) {
         if(string == null) {
             return 100;
         }
         return Integer.parseInt(string.trim().replace("%", ""));
     }
+
+    //checks a onTrigger ability should keep running
     public boolean checkIfDoAbility(Entity entity, Pair<String[], String[]> args ) {
         if(!entity.isValid()) {
-            return false;
+            if(EntityList.taskIDs.containsKey(entity.getUniqueId())) {
+                EntityList.taskIDs.remove(entity.getUniqueId());
+            }
         }
         if(!calculateHealthCheck(entity, args.first[3], args.second[3])) {
             return false;
@@ -301,6 +320,7 @@ public class MobEvents implements Listener {
         return random.nextInt(100) < calculateChance(args.first[4], args.second[4]);
     }
 
+    //Finds the ability that it should run you can find all abilities under the abilities folder
     public Boolean doAbility(Entity entity, Pair<String[], String[]> args) {
         if(args.first[0].equalsIgnoreCase("metaAbility")) {
             return metaAbility(calculateArguments(args.second[0]), calculateTargetFromString(entity, args.first[1],
@@ -318,6 +338,7 @@ public class MobEvents implements Listener {
         }
     }
 
+    //The metaAbility runs a series of abilities right after another
     private Boolean metaAbility(Map<String, String> arg, List<Entity> targets, Pair<String[], String[]> args, Entity self) {
         String ability = null;
         if(arg.containsKey("ability")) {
@@ -358,6 +379,7 @@ public class MobEvents implements Listener {
         return oneSuccessfullyAbility;
     }
 
+    //The weightedAbility runs a SINGLE ability based on chance
     private Boolean weightedAbility(Map<String, String> arg, List<Entity> targets, Pair<String[], String[]> args, Entity self) {
         String ability = null;
         if(arg.containsKey("ability")) {
@@ -402,8 +424,7 @@ public class MobEvents implements Listener {
         return false;
     }
 
-
-
+    //Check conditions that you can specify in the meta-ability and weighted-ability
     private Boolean checkAbilityConditions(YamlConfiguration yml, String ability, Entity target) {
         List<String> arguments = yml.getStringList(ability+".conditions");
         if(arguments.isEmpty()) {
@@ -429,6 +450,7 @@ public class MobEvents implements Listener {
         return true;
     }
 
+    //This turns a ability string into arguments that java can understand
     public Pair<String[], String[]> separateStrings(String function, Integer size) {
         String[] command = new String[size];
         String[] args = new String[size];
@@ -458,7 +480,6 @@ public class MobEvents implements Listener {
     }
 
     //event that calculates drops doesn't work with looting or luck.
-
     @EventHandler
     public void monsterDropEvent(EntityDeathEvent event) {
         Entity entity = event.getEntity();
@@ -520,6 +541,8 @@ public class MobEvents implements Listener {
     @EventHandler
     private void onPlayerMoveEvent(PlayerMoveEvent event) {
         List<UUID> mobId = new ArrayList<>();
+
+        //Get nearby entities is a very expansive method
         for(Entity entity : event.getPlayer().getNearbyEntities(30,30,30)) {
             mobId.add(entity.getUniqueId());
             if(EntityList.bossMobs.containsKey(entity.getUniqueId())) {

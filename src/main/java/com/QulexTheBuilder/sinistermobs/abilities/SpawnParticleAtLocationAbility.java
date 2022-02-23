@@ -5,7 +5,6 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-
 import java.util.List;
 import java.util.Map;
 
