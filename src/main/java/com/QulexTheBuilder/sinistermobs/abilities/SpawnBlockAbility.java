@@ -1,5 +1,6 @@
 package com.QulexTheBuilder.sinistermobs.abilities;
 
+import com.QulexTheBuilder.sinistermobs.AbilityEvents;
 import com.QulexTheBuilder.sinistermobs.MobEvents;
 import org.bukkit.Location;
 import org.bukkit.Material;

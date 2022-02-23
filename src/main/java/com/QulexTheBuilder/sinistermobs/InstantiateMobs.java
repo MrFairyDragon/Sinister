@@ -7,12 +7,9 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -22,7 +19,7 @@ import java.util.*;
 
 public class InstantiateMobs {
 
-    private MobEvents mobevent = new MobEvents();
+    private AbilityEvents mobevent = new AbilityEvents();
     public Map<String, ItemStack> customItems = new HashMap<>();
 
     InstantiateMobs() {

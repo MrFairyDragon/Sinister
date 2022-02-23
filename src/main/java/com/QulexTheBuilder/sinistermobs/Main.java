@@ -20,6 +20,7 @@ public final class Main extends JavaPlugin {
         mobs = new InstantiateMobs();
         CustomItems.updateItemList();
         Objects.requireNonNull(this.getCommand("sinisterMobs")).setExecutor(new Commands());
+        getServer().getPluginManager().registerEvents(new AbilityEvents(), this);
         getServer().getPluginManager().registerEvents(new MobEvents(), this);
         getServer().getPluginManager().registerEvents(new MobSpawningAlgorithm(), this);
     }

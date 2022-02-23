@@ -2,6 +2,7 @@ package com.QulexTheBuilder.sinistermobs.abilities;
 
 import com.QulexTheBuilder.sinistermobs.InstantiateMobs;
 import com.QulexTheBuilder.sinistermobs.Main;
+import com.QulexTheBuilder.sinistermobs.AbilityEvents;
 import com.QulexTheBuilder.sinistermobs.MobEvents;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
