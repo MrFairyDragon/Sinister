@@ -9,3 +9,15 @@ commands:
   sinisterMobs:
     usage: /sinistermobs
     description: Test
+
+permissions:
+  spawnMob:
+    default: op
+  changeSpawner:
+    default: op
+  spawnItem:
+    default: op
+  reload:
+    default: op
+  killTasks:
+    default: op

@@ -19,7 +19,7 @@ import java.util.*;
 
 public class InstantiateMobs {
 
-    private AbilityEvents mobevent = new AbilityEvents();
+    private final AbilityEvents mobEvent = new AbilityEvents();
     public Map<String, ItemStack> customItems = new HashMap<>();
 
     InstantiateMobs() {
@@ -119,7 +119,7 @@ public class InstantiateMobs {
             Objects.requireNonNull(armor).setBaseValue(yml.getDouble("defense"));
             Objects.requireNonNull(speed).setBaseValue(yml.getDouble("speed"));
             Objects.requireNonNull(rangeAgro).setBaseValue(yml.getDouble("agroRange"));
-            mobevent.checkCondition(yml, entity, "onSpawn");
+            mobEvent.checkCondition(yml, entity, "onSpawn");
             activateTriggerAbilities(entity, yml);
         }
     }
@@ -127,9 +127,9 @@ public class InstantiateMobs {
     public void activateTriggerAbilities(Entity entity, YamlConfiguration yml) {
         List<BukkitTask> taskList = new ArrayList<>();
         for(String str : yml.getStringList("abilities")) {
-            Pair<String[], String[]> args = mobevent.separateStrings(str, 5);
+            Pair<String[], String[]> args = mobEvent.separateStrings(str, 5);
             if(args.first[2].equalsIgnoreCase("onTrigger")) {
-                Map<String, String> parameters = mobevent.calculateArguments(args.second[2]);
+                Map<String, String> parameters = mobEvent.calculateArguments(args.second[2]);
                 Long ticks = 100L;
                 Long delay = 0L;
                 if(parameters.containsKey("ticks")) {
@@ -141,8 +141,8 @@ public class InstantiateMobs {
                 BukkitTask task = new BukkitRunnable() {
                     @Override
                     public void run() {
-                        if(mobevent.checkIfDoAbility(entity, args)) {
-                            mobevent.doAbility(entity, args);
+                        if(mobEvent.checkIfDoAbility(entity, args)) {
+                            mobEvent.doAbility(entity, args);
                         }
                     }
                 }.runTaskTimer(Main.getPlugin(), delay, ticks);

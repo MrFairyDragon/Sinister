@@ -4,11 +4,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class PotionEffectCondition extends Condition{
+public class PotionEffectCondition extends Condition {
 
     @Override
     public Boolean check(Entity target, Map<String, String> arg) {
