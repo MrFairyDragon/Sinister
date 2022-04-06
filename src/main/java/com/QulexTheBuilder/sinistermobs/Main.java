@@ -2,6 +2,7 @@ package com.QulexTheBuilder.sinistermobs;
 
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.sql.Connection;
 import java.util.Objects;
@@ -34,6 +35,13 @@ public final class Main extends JavaPlugin {
         pl.registerEvents(new CustomItemEvents(), this);
         pl.registerEvents(new CustomMobSpawnerHandler(), this);
         pl.registerEvents(new VillagerDiamondEvent(), this);
+        pl.registerEvents(new potionRainEvent(), this);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                potionRainEvent.run();
+            }
+        }.runTaskTimer(this, 0, 5);
     }
 
     @Override

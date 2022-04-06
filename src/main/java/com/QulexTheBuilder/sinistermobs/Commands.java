@@ -1,5 +1,6 @@
 package com.QulexTheBuilder.sinistermobs;
 
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -48,9 +49,9 @@ public class Commands implements CommandExecutor, TabExecutor {
                         sender.sendMessage("You need to specify a custom mob");
                         return true;
                     } else if(args.length == 2) {
-                        Block block = player.getTargetBlock(null, 5);
+                        Block block = player.getTargetBlockExact(5, FluidCollisionMode.NEVER);
                         if(block.getType().equals(Material.SPAWNER)) {
-                            BlockState blockState = player.getTargetBlock( null, 5).getState();
+                            BlockState blockState = block.getState();
                             for(File file : Objects.requireNonNull(InstantiateMobs.getFilesInDirectory("mobs"))) {
                                 if(file.getName().equalsIgnoreCase(args[1] + ".yml")) {
                                     YamlConfiguration yml = YamlConfiguration.loadConfiguration(file);
@@ -91,6 +92,15 @@ public class Commands implements CommandExecutor, TabExecutor {
                         return true;
                     }
                     EntityList.taskIDs.clear();
+                case "doPotionRain":
+                    if(!player.hasPermission("doPotionRain") || !player.isOp()){
+                        return true;
+                    }
+                    if(!potionRainEvent.doPotionRain) {
+                        potionRainEvent.doPotionRain = true;
+                    } else {
+                        potionRainEvent.doPotionRain = false;
+                    }
                 default:
                     return true;
             }
@@ -114,6 +124,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                 tabList.add("reload");
                 tabList.add("killTasks");
                 tabList.add("changeSpawner");
+                tabList.add("doPotionRain");
                 return tabList;
             } else if( args.length == 2 && args[0].equalsIgnoreCase("changeSpawner")) {
                 for(File file : InstantiateMobs.getFilesInDirectory("mobs")) {
