@@ -92,17 +92,46 @@ public class Commands implements CommandExecutor, TabExecutor {
                         return true;
                     }
                     EntityList.taskIDs.clear();
-                case "doPotionRain":
-                    if(!player.hasPermission("doPotionRain") || !player.isOp()){
-                        return true;
-                    }
-                    if(!potionRainEvent.doPotionRain) {
-                        potionRainEvent.doPotionRain = true;
-                    } else {
-                        potionRainEvent.doPotionRain = false;
-                    }
                 default:
                     return true;
+            }
+        } else if(command.getName().equalsIgnoreCase("PotionEvent")) {
+            if(args.length == 0) {
+                player.sendMessage("You will need to specify a parameter");
+                return true;
+            } else {
+                if(args[0].equalsIgnoreCase("Start")) {
+                    potionRainEvent.isPotionRaining = true;
+                } else if(args[0].equalsIgnoreCase("Stop")) {
+                    potionRainEvent.isPotionRaining = false;
+                } else if(args[0].equalsIgnoreCase("Intensity")) {
+                    if(args.length != 2 || isNotInt(args[1])) {
+                        player.sendMessage("Setting Intensity to default value");
+                        potionRainEvent.intensity = 1;
+                    } else potionRainEvent.intensity = Integer.parseInt(args[1]);
+                } else if(args[0].equalsIgnoreCase("Power")) {
+                    if(args.length != 2 || isNotInt(args[1])) {
+                        player.sendMessage("Setting Power to default value");
+                        potionRainEvent.power = 2;
+                    } else potionRainEvent.power = Integer.parseInt(args[1]);
+                } else if(args[0].equalsIgnoreCase("Duration")) {
+                    if(args.length != 2 || isNotInt(args[1])) {
+                        player.sendMessage("Setting Duration to default value");
+                        potionRainEvent.duration = 20 * 20;
+                    } else potionRainEvent.duration = Integer.parseInt(args[1]);
+                } else if(args[0].equalsIgnoreCase("Range")) {
+                    if(args.length != 2 || isNotInt(args[1])) {
+                        player.sendMessage("Setting Range to default value");
+                        potionRainEvent.range = 10;
+                    } else potionRainEvent.range = Integer.parseInt(args[1]);
+                } else if(args[0].equalsIgnoreCase("doPotionRain")) {
+                    if(potionRainEvent.doPotionRain) {
+                        potionRainEvent.doPotionRain = false;
+                    } else {
+                        potionRainEvent.doPotionRain = true;
+                    }
+                }
+                return true;
             }
         }
         return false;
@@ -143,7 +172,29 @@ public class Commands implements CommandExecutor, TabExecutor {
                 return tabList;
             }
         }
+        else if(command.getName().equalsIgnoreCase("PotionEvent")) {
+            if(args.length == 1) {
+                tabList.add("Range");
+                tabList.add("Duration");
+                tabList.add("Power");
+                tabList.add("Intensity");
+                tabList.add("Start");
+                tabList.add("Stop");
+                return tabList;
+            } else {
+                return null;
+            }
+        }
         return null;
+    }
+
+    public static boolean isNotInt(String string) {
+        try {
+            Integer.parseInt(string);
+        } catch(NumberFormatException nfe) {
+            return true;
+        }
+        return false;
     }
 
 }

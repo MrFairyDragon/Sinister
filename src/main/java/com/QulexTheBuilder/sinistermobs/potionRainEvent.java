@@ -58,9 +58,11 @@ public class potionRainEvent implements Listener {
     public static void run() {
         if(isPotionRaining) {
             if(counter <= time) {
-                World world = Bukkit.getServer().getWorld("world");
+                World world = Bukkit.getServer().getWorld("whistler");
+                World world2 = Bukkit.getServer().getWorld("resource");
                 for(int i = 0; i <= intensity; i++) {
                     SpawnPotionOnAllPlayers(world);
+                    SpawnPotionOnAllPlayers(world2);
                 }
                 counter++;
             } else {

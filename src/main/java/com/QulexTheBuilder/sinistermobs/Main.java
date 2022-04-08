@@ -29,6 +29,7 @@ public final class Main extends JavaPlugin {
         CustomMobSpawnerHandler.updateSpawnerLocationListFromMySQLDatabase();
         PluginManager pl = getServer().getPluginManager();
         Objects.requireNonNull(this.getCommand("sinisterMobs")).setExecutor(new Commands());
+        Objects.requireNonNull(this.getCommand("PotionEvent")).setExecutor(new Commands());
         pl.registerEvents(new AbilityEvents(), this);
         pl.registerEvents(new MobEvents(), this);
         pl.registerEvents(new MobSpawningAlgorithm(), this);

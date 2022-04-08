@@ -9,6 +9,9 @@ commands:
   sinisterMobs:
     usage: /sinistermobs
     description: Test
+  PotionEvent:
+    usage: /potionevent
+    description: Test
 
 permissions:
   spawnMob:
@@ -20,4 +23,6 @@ permissions:
   reload:
     default: op
   killTasks:
+    default: op
+  doPotionRain:
     default: op
