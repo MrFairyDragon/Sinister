@@ -1,16 +1,16 @@
-name: SinisterMobs
+name: Sinister
 version: '${project.version}'
-main: com.QulexTheBuilder.sinistermobs.Main
+main: com.AgarthaMC.Sinister.Main
 api-version: 1.17
 authors: [ QulexTheBuilder ]
-description: Make Custom Mobs
+description: So spooky so sinister
 
 commands:
-  sinisterMobs:
-    usage: /sinistermobs
+  Sinister:
+    usage: /Sinister
     description: Test
   PotionEvent:
-    usage: /potionevent
+    usage: /Potionevent
     description: Test
 
 permissions:
