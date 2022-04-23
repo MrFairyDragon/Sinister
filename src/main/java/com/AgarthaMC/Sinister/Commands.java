@@ -91,13 +91,28 @@ public class Commands implements CommandExecutor, TabExecutor {
                     if(!player.hasPermission("spawnMob") || !player.isOp()) {
                         return true;
                     }
-                    if(args.length == 1) {
+
+                    switch(args.length)
+                    {
+                        case 1:
+                        sender.sendMessage("You need to specify a mob");
+                        return true;
+
+                        case 2:
+                        Main.getPlugin().mobs.spawnMob(args[1], player.getLocation());
+                        return true;
+
+                        default:
+                        return true;
+                    }
+
+                    /*if(args.length == 1) {
                         sender.sendMessage("You need to specify a mob");
                         return true;
                     } else if(args.length == 2) {
                         Main.getPlugin().mobs.spawnMob(args[1], player.getLocation());
                         return true;
-                    }
+                    }*/
                 case "CHANGESPAWNER":
                     if(!player.hasPermission("changeSpawner") || !player.isOp()) {
                         return true;

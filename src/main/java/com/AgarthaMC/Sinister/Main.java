@@ -1,11 +1,16 @@
 package com.AgarthaMC.Sinister;
 
+import com.AgarthaMC.Sinister.ThiefStuff.BlockPlace;
+import com.AgarthaMC.Sinister.ThiefStuff.ThiefDeath;
 import com.AgarthaMC.Sinister.classes.ClassAssignment;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public final class Main extends JavaPlugin {
@@ -18,6 +23,9 @@ public final class Main extends JavaPlugin {
     public InstantiateMobs mobs;
     public Connection connection;
     private MySQL sql;
+
+    //Thief Usage
+    public List<ItemStack> stolenItems = new ArrayList<>();
 
     @Override
     public void onEnable() {
@@ -39,6 +47,7 @@ public final class Main extends JavaPlugin {
                 potionRainEvent.run();
             }
         }.runTaskTimer(this, 0, 5);
+
     }
 
     @Override
@@ -54,5 +63,7 @@ public final class Main extends JavaPlugin {
         pl.registerEvents(new CustomMobSpawnerHandler(), this);
         pl.registerEvents(new VillagerDiamondEvent(), this);
         pl.registerEvents(new potionRainEvent(), this);
+        pl.registerEvents(new BlockPlace(), this);
+        pl.registerEvents(new ThiefDeath(), this);
     }
 }

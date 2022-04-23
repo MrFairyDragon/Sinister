@@ -23,13 +23,11 @@ public enum AbilityList {
     SPAWNPARTICLESPHERE(new SpawnParticleSphereAbility()),
     SURFACELOCATION(new SurfaceLocationAbility()),
     TRANSFORMBLOCK(new TransformBlockAbility());
-
     private Ability ability;
 
     AbilityList(Ability ability) {
         this.ability = ability;
     }
-
     public Boolean doAbility(Entity self, List<Entity> targets, Map<String, String> arg) {
         return this.ability.start(self, targets, arg);
     }
