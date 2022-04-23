@@ -2,8 +2,6 @@ package com.AgarthaMC.Sinister.ThiefStuff;
 
 import net.minecraft.network.chat.ChatComponentText;
 import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.world.entity.EntityLiving;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.ai.goal.PathfinderGoalAvoidTarget;
 import net.minecraft.world.entity.ai.goal.PathfinderGoalPanic;
@@ -17,10 +15,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 
 import net.minecraft.world.entity.npc.VillagerProfession;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
-
-import java.util.logging.Level;
+import net.minecraft.world.level.World;
 
 public class Thief extends EntityVillager {
 
@@ -29,7 +24,7 @@ public class Thief extends EntityVillager {
 
     public Thief(Location loc)
     {
-        super(EntityTypes.aV, (WorldServer) loc.getWorld());
+        super(EntityTypes.aV, ((World) loc.getWorld()));
 
         AttributeInstance health = this.craftAttributes.getAttribute(Attribute.GENERIC_MAX_HEALTH); //Get a health instance for the villager
 
