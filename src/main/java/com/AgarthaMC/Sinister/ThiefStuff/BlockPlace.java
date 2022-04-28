@@ -3,8 +3,11 @@ package com.AgarthaMC.Sinister.ThiefStuff;
 import java.util.Random;
 
 import com.AgarthaMC.Sinister.Main;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.npc.VillagerType;
 import net.minecraft.world.level.World;
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -32,9 +35,9 @@ public class BlockPlace implements Listener{
         }
 
         Thief dirtyJoe = new Thief(event.getPlayer().getLocation());
-        World world = ((World) event.getPlayer().getWorld());
+        World world = ((CraftWorld) event.getPlayer().getWorld()).getHandle();
 
-        world.addEntity(dirtyJoe, SpawnReason.CUSTOM);
+        world.addFreshEntity(dirtyJoe, SpawnReason.CUSTOM);
 
         event.setCancelled(true);
 
