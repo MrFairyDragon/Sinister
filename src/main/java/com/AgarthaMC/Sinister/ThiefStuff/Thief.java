@@ -42,6 +42,6 @@ public class Thief extends EntityVillager {
         this.bQ.a(2, new PathfinderGoalRandomStrollLand(this, 0.6D));
         this.bQ.a(3, new PathfinderGoalRandomLookaround(this));
 
-        this.a(new VillagerData(this.fK().a(), VillagerProfession.l, 0));
+        this.a(new VillagerData(this.fK().a(), VillagerProfession.l, 0)); //Set the profession to NITWIT
     }
 }
