@@ -1,5 +1,10 @@
 package com.AgarthaMC.Sinister;
 
+import com.AgarthaMC.Sinister.mobs.CustomMobSpawnerHandler;
+import com.AgarthaMC.Sinister.mobs.EntityList;
+import com.AgarthaMC.Sinister.mobs.InstantiateMobs;
+import com.AgarthaMC.Sinister.items.CustomItems;
+import com.AgarthaMC.Sinister.serverEvents.potionRainEvent;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -13,6 +18,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
+import javax.swing.plaf.synth.Region;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +84,6 @@ public class Commands implements CommandExecutor, TabExecutor {
         }
     } */
 
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player)) {
@@ -87,6 +92,7 @@ public class Commands implements CommandExecutor, TabExecutor {
         Player player = (Player) sender;
         if(command.getName().equalsIgnoreCase("Sinister")) {
             switch(args[0].toUpperCase()) {
+                //region Mobs
                 case "SPAWNMOB":
                     if(!player.hasPermission("spawnMob") || !player.isOp()) {
                         return true;
@@ -105,14 +111,6 @@ public class Commands implements CommandExecutor, TabExecutor {
                         default:
                         return true;
                     }
-
-                    /*if(args.length == 1) {
-                        sender.sendMessage("You need to specify a mob");
-                        return true;
-                    } else if(args.length == 2) {
-                        Main.getPlugin().mobs.spawnMob(args[1], player.getLocation());
-                        return true;
-                    }*/
                 case "CHANGESPAWNER":
                     if(!player.hasPermission("changeSpawner") || !player.isOp()) {
                         return true;
@@ -141,6 +139,8 @@ public class Commands implements CommandExecutor, TabExecutor {
                         }
                         return true;
                     }
+                    //endregion
+                //region Items
                 case "SPAWNITEM":
                     if(!player.hasPermission("spawnItem") || !player.isOp()) {
                         return true;
@@ -159,6 +159,8 @@ public class Commands implements CommandExecutor, TabExecutor {
                     CustomItems.updateItemList();
                     player.sendMessage("You have reloaded stuff");
                     return true;
+                //endregion
+                //region Mobs2
                 case "KILLTASKS":
                     if(!player.hasPermission("killTasks") || !player.isOp()) {
                         return true;
@@ -166,8 +168,10 @@ public class Commands implements CommandExecutor, TabExecutor {
                     EntityList.taskIDs.clear();
                 default:
                     return true;
+                //endregion
             }
         } else if(command.getName().equalsIgnoreCase("PotionEvent")) {
+            //region ServerEvents
             if(args.length == 0) {
                 player.sendMessage("You will need to specify a parameter");
                 return true;
@@ -246,7 +250,9 @@ public class Commands implements CommandExecutor, TabExecutor {
                     }
                     break;
             }
+            //endregion
         } else if(command.getName().equalsIgnoreCase("SinisterClasses")) {
+            //region UNKNOWN
             if(args.length == 0) {
                 player.sendMessage("You will need to specify a parameter");
                 return true;
@@ -254,40 +260,49 @@ public class Commands implements CommandExecutor, TabExecutor {
             switch(args[0]) {
 
             }
+            //endregion
         }
         return true;
     }
 
+    //region Items2
     private void spawnItem(String name, Player player) {
         if(Main.getPlugin().mobs.customItems.containsKey(name)) {
             player.getInventory().addItem(Main.getPlugin().mobs.customItems.get(name));
         }
     }
+    //endregion
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> tabList = new ArrayList<>();
         if(command.getName().equalsIgnoreCase("Sinister")) {
             if(args.length == 1) {
-                tabList.add("spawnMob");
-                tabList.add("spawnItem");
-                tabList.add("reload");
-                tabList.add("killTasks");
-                tabList.add("changeSpawner");
+                tabList.add("spawnMob"); //add to mobs
+                tabList.add("spawnItem"); //add to items
+                tabList.add("reload"); //add to core
+                tabList.add("killTasks"); //add to mobs
+                tabList.add("changeSpawner"); //add to mobs
                 return tabList;
+
             } else if( args.length == 2 && args[0].equalsIgnoreCase("changeSpawner")
                     || args.length == 2 && args[0].equalsIgnoreCase("spawnmob")) {
+                //region Mobs3
                 for(File file : Objects.requireNonNull(InstantiateMobs.getFilesInDirectory("mobs"))) {
                     tabList.add(file.getName().substring(0, file.getName().length() - 4));
                 }
+                //endregion
                 return tabList;
             } else if( args.length == 2 && args[0].equalsIgnoreCase("spawnitem")) {
+                //region Items3
                 for(File file : Objects.requireNonNull(InstantiateMobs.getFilesInDirectory("items"))) {
                     tabList.add(file.getName().toLowerCase().substring(0, file.getName().length() - 4));
                 }
+                //endregion
                 return tabList;
             }
         }
+        //region ServerEvents2
         else if(command.getName().equalsIgnoreCase("PotionEvent")) {
             if(args.length == 1) {
                 tabList.add("range");
@@ -302,6 +317,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                 return null;
             }
         }
+        //endregion
         return null;
     }
 
